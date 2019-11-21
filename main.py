@@ -8,6 +8,9 @@ import os
 ##Make sure 1v1
 ##Make sure 1V1VXAuto
 #make sure AutoPlay Works
+#make sure if dealer reveals an ace to stop and check board for play
+#there an issue with hiting first then passing second, makes them hit twice.
+
 
 
 game = GameBoard()
