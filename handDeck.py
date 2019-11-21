@@ -4,7 +4,7 @@
 # table contains a set amount of players
 
 import random
-
+import os
 #Define what a card is gonna be
 class Card:
     def __init__(self, name, suit, value):
@@ -14,6 +14,8 @@ class Card:
 
     def show(self):
         print("____" + self.name + "-" + self.suit + " = " + str(self.value))
+    def getImage(self):
+        return str(self.name + self.suit)
 
 
 class Hand:
@@ -65,16 +67,17 @@ class Hand:
     def showAll(self):
         if self.cardList:
             # print(self.cardList)
+            image =[]
             for cards in self.cardList:
-                cards.show()
-            
-            print("The Total is ... " + str(self.calculateHand()))
+                image.append(cards.getImage())
+            print(image, end="")
+            print(" = " + str(self.calculateHand()))
         else:
             print("empty list")
 
     def makeDeck(self, num):
         #This right here makes a deck based on the number provided
-        print("HERE WORK AT MAKEDECK IN CLASS HAND")
+        #print("HERE WORK AT MAKEDECK IN CLASS HAND")
 
         suits = ["Hearts", "Diamonds", "Spades", "Clubs"]
 
@@ -99,9 +102,10 @@ class Hand:
                     #self.count += 1
                     self.addCard(newCard)
     def showFake(self):
-        print("__????????????????__")
-        self.cardList[1].show()
-        print("The total is ... " + str(self.cardList[1].value))
+        image = []
+        image.append(self.cardList[1].getImage())
+        print(image, end=" = ")
+        print(str(self.cardList[1].value))
 
     def makeFakeDeck(self, num):
         print("HERE WORK AT MAKEDECK IN CLASS HAND")
@@ -140,32 +144,45 @@ class Hand:
         else:
             self.money -= self.bet
 
-    def playHand(self, deck):
-        print("HERE IS YOUR CURRENT HAND")
+    def showHand(self, flag):
         self.showAll()
-        print("Do you want to Hit, double down or Pass? HIT == 1, double down == 2")
-        choice = input()
+        if(flag == 0):
+            print("HERE IS YOUR CURRENT HAND")
+            print("OPTION:")
+            print("[1] - HIT")
+            print("[2] - Double Down")
+            print("[3] - Pass")
+            print("[4] - Split * NOT IMPLEMENTED")
+        else:
+            print("HERE IS YOUR CURRENT HAND")
+            print("OPTION:")
+            print("[1] - HIT")
+            print("[2] - Pass")
 
-        if choice == "2":
-            self.addCard(deck.dealCard())
-            self.showAll()
-            if self.calculateHand() > 22:
-                print("WHOOPS SOMEONE BUSTED")
+    def playHand(self, deck):
+        self.showHand(0)
+        choice = input()
 
         while choice == "1":
             self.addCard(deck.dealCard())
             self.showAll()
             if self.calculateHand() < 22:
-               print("Do you want to Hit or Pass? HIT == 1")
+               self.showHand(1)
                choice = input()
             else:
                 print("WHOOPS SOMEONE BUSTED")
                 choice = "2"
-    def playAi(self, dealer, num, deck):
+
+        if choice == "2":
+            self.addCard(deck.dealCard())
+            if self.calculateHand() > 21:
+                print("WHOOPS SOMEONE BUSTED")
+    def playAi(self, num, deck):
 
         #3 personalities
         #1 - hit on 15
         #2 - hit on 16
+
 
         if num == 9999:
         #if dealer.cardList[1].value 
@@ -173,7 +190,6 @@ class Hand:
             if self.calculateHand() == 17 and self.containAce():
                 #hit on soft 17
                 self.addCard(deck.dealCard())
-
             while self.calculateHand() < 17:
                 self.addCard(deck.dealCard())
                 if self.calculateHand() >= 22:
@@ -265,35 +281,141 @@ class GameBoard:
        self.dealer = Hand()
        self.playerArray = []
        self.deck = Hand()
-       self.deck.makeDeck(self.amountDeck)
+       #self.deck.makeDeck(self.amountDeck)
+       self.amountPlayers = 3
+       self.lineMax = 80
+       self.rowMax = 10
+       self.autoPlay = False
+       self.gameOver = False
+       self.round = 1
+       self.maxRound = 1000
 
-    def addPlay(self):
-        print("how many players?")
-        howMany = input()
-        for i in range(int(howMany)):
+
+    def playGame(self):
+        for i in range(self.amountPlayers):
             player = Hand()
             self.playerArray.append(player)
-
+        #making Deck
+        self.deck.makeDeck(self.amountDeck)
+        while (self.gameOver == False):
+            #Deal Cards Show Board, Allow for Play
+            self.playRound()
+            print("next Round?")
+            next = input()
+            if(next == "1"):
+                continue
+            else:
+                self.gameOver = True
     def dealRound(self):
-        self.dealer.addCard(self.deck.dealCard())
-        self.dealer.addCard(self.deck.dealCard())
-
-        for i in range(len(self.playerArray)):
-            self.playerArray[i].addCard(self.deck.dealCard())
-            self.playerArray[i].addCard(self.deck.dealCard())
-    
+        #deals Player first then dealer
+        for d in range(2):
+            for i in range(len(self.playerArray)):
+                self.playerArray[i].addCard(self.deck.dealCard())
+            self.dealer.addCard(self.deck.dealCard())            
     def showBoard(self):
-        print("########################################################################")
-        print("NOW SHOWING THE BOARD")
-        print("########################################################################")
-        print("DEALER")
-        self.dealer.showFake() 
-        print("########################################################################")
-        for i in range(len(self.playerArray)):
-            print("PLAYER - " + str(i))
-            self.playerArray[i].showAll()
-            print("########################################################################")
-    
+        os.system('cls')
+        #maxRows - total Players - 1 for dealer = consistent menu
+        for row in range(self.rowMax - (self.amountPlayers - 1)):
+            if(row == 0):
+                print("-" * 80)
+                print(("PLAY GAME - ROUND " + str(self.round)).center(self.lineMax))
+                self.round = self.round + 1
+                print("[DEALER] - ", end="")
+                self.dealer.showFake() 
+                for i in range(len(self.playerArray)):
+                    print("[PLAYER "+ str(i + 1) + "] - " , end="")
+                    self.playerArray[i].showAll()
+            print("")
+        print("-" * 80)
+
+    def display(self):
+        os.system('cls')
+        for row in range(self.rowMax - 2):
+            if(row == 0):
+                print("-" * 80)
+                print(("MENU").center(self.lineMax))
+                print("[1] - Play game")
+                print("[2] - Settings")
+                print("[3] - Exit")
+            print("")
+        print("-" * 80)
+        
+    def displaySetting(self):
+        #adding this while loop to allow users to stay in setting mode till there is a break
+        settingInput = " "
+        while settingInput !="4":
+                    
+                    os.system('cls')
+                    for row in range(self.rowMax - 2):
+                        if(row == 0):
+                            print("-" * 80)
+                            print(("SETTINGS").center(self.lineMax))
+                            print("[1] - Change Deck size - Currently at " + str(self.amountDeck))
+                            print("[2] - Change Player size - Currently at " + str(self.amountPlayers))
+                            print("[3] - Change autoPlay - Currently set as " + str(self.autoPlay))
+                            print("[4] - EXIT")
+                        print("")
+                    print("-" * 80)
+
+                    choice =" "
+                    while choice!="4":
+                        choice=input()
+                        if(choice =="1"):
+                            os.system('cls')
+                            for row in range(self.rowMax - 2):
+                                if(row == 0):
+                                    print("-" * 80)
+                                    print(("SETTINGS").center(self.lineMax))
+                                    print("[1] - Deck size - Currently at " + str(self.amountDeck))
+                                    print("ENTER - 'EXIT' to return to main screen")
+                                    print("Please enter new Deck size (MAX IS 10)")
+                                print("")
+                            print("-" * 80)
+                            delta = input()
+                            if(delta == "EXIT" ):
+                                break
+                            else:
+                                self.amountDeck = int(delta) 
+                                break
+                        elif(choice =="2"):
+                            os.system('cls')
+                            for row in range(self.rowMax - 2):
+                                if(row == 0):
+                                    print("-" * 80)
+                                    print(("SETTINGS").center(self.lineMax))
+                                    print("[1] - Player size - Currently at " + str(self.amountPlayers))
+                                    print("ENTER - 'EXIT' to return to main screen")
+                                    print("Please enter new Player size (MAX IS 6)")
+                                print("")
+                            print("-" * 80)
+                            delta = input()
+                            if(delta == "EXIT" ):
+                                break
+                            else:
+                                self.amountPlayers = int(delta)
+                                break
+                        elif(choice =="3"):
+                            os.system('cls')
+                            for row in range(self.rowMax - 2):
+                                if(row == 0):
+                                    print("-" * 80)
+                                    print(("SETTINGS").center(self.lineMax))
+                                    print("[1] - Auto Play - Currently set at " + str(self.autoPlay))
+                                    print("ENTER - 'EXIT' to return to main screen")
+                                    print("Please enter 1 to set AutoPlay to YES")
+                                print("")
+                            print("-" * 80)
+
+                            delta = input()
+                            if(delta == "EXIT" ):
+                                break
+                            elif(delta =="1"):
+                                self.autoPlay = True
+                                break
+                            else:
+                                break
+                        elif(choice=="4"):
+                           settingInput = "4"
     def victor(self):
         print("########################################################################")
         print("Now to tally up the score")
@@ -343,15 +465,15 @@ class GameBoard:
             self.deck.makeDeck(self.amountDeck)
 
     def playRound(self):
-         print("########################################################################")
-         print("Lets play this round")
-
+         self.dealRound()
          for i in range(len(self.playerArray)):
-            print("Player " + str(i + 1) + " Turn")
+            self.showBoard()
+            print("[Player " + str(i + 1) + "] Turn")
             self.playerArray[i].playHand(self.deck)
 
-         print("For the Dealer")
-         self.dealer.playHand(self.deck)
+         self.showBoard()
+         print("[Dealer] Turn")
+         self.dealer.playAi(9999, self.deck)
          self.victor()
 
     def roundAi(self):

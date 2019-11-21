@@ -1,37 +1,29 @@
 from handDeck import *
-from Menu import *
+import os
 
 
+#TODO
+#Make Display [11/20/2019]
+#make sure single user game play works
+##Make sure 1v1
+##Make sure 1V1VXAuto
+#make sure AutoPlay Works
 
-#variables
 
 game = GameBoard()
-print("########################################################################")
-print("########################################################################")
-print("Do you want to play? 1 == yes")
-choice = input()
+choice = " "
+while choice != "3":
 
-if choice == "1":
-    game.addPlay()
+    game.display()
+    choice = input()
+    game.display()
 
-while choice == "1":
-   game.dealRound()
-   game.showBoard()
-
-   print("########################################################################")
-   print("########################################################################")  
-
-   #game.playRound()
-   print("how many rounds?")
-   num = input()
-   for i in range(int(num)):
-       game.roundAi()
-
-   print("########################################################################")
-   print("########################################################################")
-   print("Do you wanna play another Round?")
-   choice = input()
-
-game.showResults()
-
-
+    if(choice=="1"):
+        game.playGame()
+        #game.showBoard()
+    elif(choice=="2"):
+        game.displaySetting()
+        #game.display()
+    elif(choice=="3"):
+        print("Good Bye")
+        break
