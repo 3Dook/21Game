@@ -23,6 +23,7 @@ while choice != "3":
 
     if(choice=="1"):
         game.playGame()
+        game.resetBoard()
         #game.showBoard()
     elif(choice=="2"):
         game.displaySetting()

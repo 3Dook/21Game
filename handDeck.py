@@ -5,6 +5,15 @@
 
 import random
 import os
+
+#Make Display [11/20/2019]
+#make sure single user game play works [11/22/2019]
+##Make sure 1v1 [11/22/2019]
+##Make sure 1V1VXAuto
+#make sure AutoPlay Works
+#make sure if dealer reveals an ace to stop and check board for play
+#there an issue with hiting first then passing second, makes them hit twice. [ 11/22/2019] small loop error
+
 #Define what a card is gonna be
 class Card:
     def __init__(self, name, suit, value):
@@ -158,26 +167,32 @@ class Hand:
             print("HERE IS YOUR CURRENT HAND")
             print("OPTION:")
             print("[1] - HIT")
-            print("[2] - Pass")
+            print("[2] - ------")
+            print("[3] - Pass")
 
     def playHand(self, deck):
-        self.showHand(0)
+
+        if(len(self.cardList) <= 2):
+            self.showHand(0)
+        else:
+            self.showHand(1)
         choice = input()
         #PLAY HAND DOESN'T RESET the stuff below it 
-        while choice == "1":
+        # return bool 1 to contine 0 false to break
+        if (choice == "1"):
             self.addCard(deck.dealCard())
             self.showAll()
             if self.calculateHand() < 22:
-               self.showHand(1)
-               choice = input()
+                return 1
             else:
                 print("WHOOPS SOMEONE BUSTED")
                 choice = "2"
-
-        if choice == "2":
+        elif choice == "2":
             self.addCard(deck.dealCard())
             if self.calculateHand() > 21:
                 print("WHOOPS SOMEONE BUSTED")
+         
+        return 0
     def playAi(self, num, deck):
 
         #3 personalities
@@ -288,8 +303,25 @@ class GameBoard:
        self.rowMax = 10
        self.autoPlay = False
        self.gameOver = False
-       self.round = 1
+       self.round = 0
        self.maxRound = 1000
+    def resetBoard(self):
+        #save from settings
+       self.amountDeck = self.amountDeck
+       self.dealer = Hand()
+       self.playerArray = []
+       self.deck = Hand()
+       #self.deck.makeDeck(self.amountDeck)
+       #save from settings
+       self.amountPlayers = self.amountDeck
+       self.lineMax = 80
+       self.rowMax = 10
+       #saved from settings
+       self.autoPlay = self.autoPlay
+       self.gameOver = False
+       self.round = 0
+       self.maxRound = 1000
+
     def playGame(self):
         for i in range(self.amountPlayers):
             player = Hand()
@@ -306,6 +338,7 @@ class GameBoard:
             else:
                 self.gameOver = True
     def dealRound(self):
+        self.round = self.round + 1
         #deals Player first then dealer
         for d in range(2):
             for i in range(len(self.playerArray)):
@@ -318,7 +351,6 @@ class GameBoard:
             if(row == 0):
                 print("-" * 80)
                 print(("PLAY GAME - ROUND " + str(self.round)).center(self.lineMax))
-                self.round = self.round + 1
                 print("[DEALER] - ", end="")
                 self.dealer.showFake() 
                 for i in range(len(self.playerArray)):
@@ -378,13 +410,17 @@ class GameBoard:
     def playRound(self):
          self.dealRound()
          for i in range(len(self.playerArray)):
-            self.showBoard()
-            print("[Player " + str(i + 1) + "] Turn")
-            self.playerArray[i].playHand(self.deck)
+            while True:
+                self.showBoard()
+                print("[Player " + str(i + 1) + "] Turn")
+                if(self.playerArray[i].playHand(self.deck) == 0):
+                    break
+                
 
          self.showBoard()
          print("[Dealer] Turn")
          self.dealer.playAi(9999, self.deck)
+         self.dealer.showAll()
          self.victor()
 
     def roundAi(self):
@@ -496,3 +532,23 @@ class GameBoard:
                                 break
                         elif(choice=="4"):
                            settingInput = "4"
+
+
+
+#MAIN PROGRAM TO BE RUN 
+game = GameBoard()
+choice = " "
+while choice != "3":
+
+    game.display()
+    choice = input()
+    game.display()
+
+    if(choice=="1"):
+        game.playGame()
+        game.resetBoard()
+    elif(choice=="2"):
+        game.displaySetting()
+    elif(choice=="3"):
+        print("Good Bye")
+        break
