@@ -1,5 +1,6 @@
 # Player Class
 from card import *
+import json
 
 class Player:
     def __init__(self, control, amount):
@@ -13,6 +14,14 @@ class Player:
         self.name = ""
         self.current = ""
         self.additionalHand = False
+
+    def toJson(self):
+        playerDict = {
+            "controller": self.controller,
+            "amount": self.amount,
+            "bet": self.bet
+        }
+        return json.dumps(playerDict)
 
     def showHand(self):
         temp = []
