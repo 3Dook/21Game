@@ -5,6 +5,7 @@ import re
 from player import Player
 from menu import Menu
 from game import Game
+import json
 
 class GameBoard:
     def __init__(self):
@@ -14,68 +15,65 @@ class GameBoard:
         self.playerArray = []
         self.showDisplay = 1
         self.startingAmount = 500
-        self.autoPlay = 1 # 1 == manual, 2 == auto, 3 == custom
-        self.doubleDown = 1 #true allows for all False only 10 and 11
+        self.autoPlay = 3 # 1 == manual, 2 == auto, 3 == custom
+        self.doubleDownRule = 1 #true allows for all; False only 10 and 11
         self.menu = Menu()
         self.checkSetting()
 
     def checkSetting(self):
-        #this function will only get called once during the initalization.
-        #If it is unable to find a setting.txt it will create one it self.
-        if(os.path.exists("settings.txt")):
-            #found txt file, and load.
-            print("Found It")
-            self.loadSettings()
+        #Use during initilization to check if there is already a file
+        # else create it.
+        if(os.path.exists("settings.json")):
+                #found txt file, and load.
+                print("Found It")
+                self.loadSettings()
         else:
             #make a file and load set basic values to start
             print("Did not Find IT")
-            settings = open("settings.txt", "w+")
-            settings.write("deckSize: 1\n")
-            settings.write("playerSize: 1\n")
-            settings.write("Display: 1\n")
-            settings.write("StartingAmount: 500\n")
-            settings.write("autoPlay: 3\n")
-            settings.write("doubleDown: 1\n")
-            settings.write("player1: 1\n")
+            newPlayer = Player(1, 500)
+            settings_dict = {'numOfDeck': 1,
+                'doubleDownRule': 1,
+                'startingAmount': 500,
+                'autoPlay': 3,
+                'numOfPlayers': 1,
+                'playerArray': [newPlayer.toJson()]
+            }
 
-            settings.close()
+            with open('settings.json', 'w') as json_file:
+                json.dump(settings_dict, json_file)
+                json_file.close()
     def loadSettings(self):
-        #this function will read settings from textfile and load game settings.
-        settings = open("settings.txt", "r")
-        content = settings.readlines()
-        #saving settings into gameboard.
-        temp = re.findall("\d+", content[0])
-        self.numOfDeck = int(temp[0])
-        temp = re.findall("\d+", content[1])
-        self.numOfPlayers = int(temp[0])
-        temp = re.findall("\d+", content[2])
-        self.showDisplay = int(temp[0])
-        temp = re.findall("\d+", content[3])
-        self.startingAmount = int(temp[0])
-        temp = re.findall("\d+", content[4])
-        self.autoPlay = int(temp[0])
-        temp = re.findall("\d+", content[5])
-        self.doubleDown=int(temp[0])
+    #This function will load and update the board state
+        with open('settings.json') as f:
+            data = json.loads(f.read())
+            f.close()
+        
+        self.numOfDeck = data['numOfDeck']
+        self.startingAmount = data['startingAmount']
+        self.doubleDownrule = data['doubleDownRule']
+        self.numOfPlayers = data['numOfPlayers']
+        self.autoPlay = data['autoPlay']
+        #loop to add players
+        for i in range(self.numOfPlayers):
+            try:
+                temp = json.loads(data['playerArray'][i])
+                tempPlayer = Player(temp['controller'], temp['amount'])
+                tempPlayer.bet = temp['bet']
+                self.playerArray.append(tempPlayer)
+            except:
+                # bad data need to make a new player and add to list
+                newPlayer = Player(1, 500)
+                self.playerArray.append(newPlayer)
+                self.updateSettings()
 
-        if(self.autoPlay == 3):
-            for i in range(self.numOfPlayers): 
-                temp = re.findall("\d+", content[i + 6])
-                tempPlayer = Player(int(temp[1]), self.startingAmount)
-                self.playerArray.append(tempPlayer)
-        else:
-            for i in range(self.numOfPlayers): 
-                tempPlayer = Player(self.autoPlay, self.startingAmount)
-                self.playerArray.append(tempPlayer)
-        settings.close()
-    
     def runMainMenu(self):
         l1 = "MENU"
         l2 = "[1] - PLAY GAME"
         l3 = "[2] - SETTINGS"
-        l4 = "[3] - EXIT"
+        l4 = "[q] - EXIT"
         lobj = [l1, l2, l3, l4]
         choice = ""
-        while choice !="3":
+        while choice !="q":
             self.menu.displayTerminal(lobj)
             choice = input()
             if(choice=="1"):
@@ -83,12 +81,13 @@ class GameBoard:
                 self.runGame()
             elif(choice=="2"):
                 self.changeSettings()
-            elif(choice=="3"):
+            elif(choice=="q"):
                 print("Good bye thank you for playing!")
                 return
     def runGame(self):
         game = Game(self.numOfDeck, self.playerArray)
         game.start()
+        self.updateSettings()
 
     def printSettings(self):
         print(self.numOfDeck)
@@ -97,46 +96,48 @@ class GameBoard:
         print(self.startingAmount)
         print(self.autoPlay)
         print(self.playerArray)
+        os.system('Pause')
 
     def updateSettings(self):
-        #this function will directly rewrite all settings into document.
-        self.playerControl = []
-        settings = open("settings.txt", "w")
-        settings.write("deckSize: " + str(self.numOfDeck) + "\n")
-        settings.write("playerSize: " + str(self.numOfPlayers) + "\n")
-        if(self.showDisplay == 1):
-            settings.write("Display: 1\n")
-        else:
-            settings.write("Display: 2\n")
-        settings.write("StartingAmount: " + str(self.startingAmount) + "\n")
-        settings.write("autoPlay: " + str(self.autoPlay) + "\n")
+        #this function will directly rewrite all settings into document.\
+        tempPlayerArray = []
         
-        settings.write("doubleDown: " + str(self.doubleDown) + "\n")
-        #by default set everything to manual regardless.
-        tempArray = []
-        for i in range(self.numOfPlayers):
-            #if(self.playerArray[i]):
-            if(self.autoPlay == 3):
+        saveData = {
+            'numOfDeck': self.numOfDeck,
+            'doubleDownRule': self.doubleDownRule,
+            'startingAmount': self.startingAmount,
+            'autoPlay': self.autoPlay,
+            'numOfPlayers': self.numOfPlayers,
+            'playerArray': []
+        }
+
+        if(self.autoPlay == 3):
+            for i in range(self.numOfPlayers):
                 try:
-                    temp = self.playerArray[i]
-                    settings.write("Player "+ str(i + 1) + ": " + str(temp.controller) + "\n")
-                    temp.amount = self.startingAmount
-                    tempArray.append(temp)
+                    saveData['playerArray'].append(self.playerArray[i].toJson())
+                    tempPlayerArray.append(self.playerArray[i])
                 except:
-                    #no players make some
-                    temp = Player(self.autoPlay, self.startingAmount)
-                    settings.write("Player "+ str(i+1) + ": " + str(temp.controller) + "\n")
-                    tempArray.append(temp)
-            else:
-                #no players make some
-                temp = Player(self.autoPlay, self.startingAmount)
-                settings.write("Player "+ str(i+1) + ": " + str(temp.controller) + "\n")
-                tempArray.append(temp)
+                    # bad data need to make a new player and add to list
+                    newPlayer = Player(2, self.startingAmount)
+                    tempPlayerArray.append(newPlayer)
+                    saveData['playerArray'].append(newPlayer.toJson())
+        else:
+           for i in range(self.numOfPlayers):
+                try:
+                    self.playerArray[i].controller = self.autoPlay
+                    saveData['playerArray'].append(self.playerArray[i].toJson())
+                    tempPlayerArray.append(self.playerArray[i])
+                except:
+                    # bad data need to make a new player and add to list
+                    newPlayer = Player(self.autoPlay, self.startingAmount)
+                    saveData['playerArray'].append(newPlayer.toJson())
+                    tempPlayerArray.append(self.playerArray[i])
         
-        self.playerArray = []
-        self.playerArray = tempArray
-    
-        settings.close()
+        self.playerArray = tempPlayerArray
+        with open('settings.json', 'w') as json_file:
+            json.dump(saveData, json_file)
+            json_file.close()
+
     def sendDisplaytoMenu(self):
         obj = []
         obj.append("SETTINGS")
@@ -144,15 +145,15 @@ class GameBoard:
         obj.append("[2] - CHANGE PLAYER SIZE - CURRENTLY AT " + str(self.numOfPlayers))
         obj.append("[3] - CHANGE STARTING AMOUNT - CURRENT AT " + str(self.startingAmount))
         obj.append("[4] - CHANGE AUTOPLAY - CURRENT SET AT " + str(self.autoPlay))
-        obj.append("[5] - CHANGE DOUBLEDOWN RULE - CURRENT SET AT " + str(self.doubleDown))
-        obj.append("[6] - EXIT")
+        obj.append("[5] - CHANGE DOUBLEDOWN RULE - CURRENT SET AT " + str(self.doubleDownRule))
+        obj.append("[q] - EXIT")
         self.menu.displayTerminal(obj)
 
     def changeSettings(self):
         # create an object and pass it to a menu function to read out.
         #self.sendDisplaytoMenu()
         choice = ""
-        while choice !="6":
+        while choice !="q":
             self.sendDisplaytoMenu()
             choice=input()
             os.system('cls')
@@ -160,11 +161,11 @@ class GameBoard:
                 obj = []
                 obj.append("SETTINGS")
                 obj.append("[1] - DECK SIZE - CURRENTLY AT " + str(self.numOfDeck))
-                obj.append("ENTER - 'exit' to return to settings screen")
+                obj.append("ENTER - 'q' to return to settings screen")
                 obj.append("PLEASE ENTER NEW DECK SIZE (MAX IS 10)")
                 self.menu.displayTerminal(obj)
                 delta = input()
-                if(delta == "exit" ):
+                if(delta == "q" ):
                     continue
                 else:
                     self.numOfDeck = int(delta) 
@@ -173,11 +174,11 @@ class GameBoard:
                 obj = []
                 obj.append("SETTINGS")
                 obj.append("[1] - PLAYER SIZE - CURRENTLY AT " + str(self.numOfPlayers))
-                obj.append("ENTER - 'exit' to return to settings screen")
+                obj.append("ENTER - 'q' to return to settings screen")
                 obj.append("PLEASE ENTER NEW PLAYER SIZE (MAX IS 6)")
                 self.menu.displayTerminal(obj)
                 delta = input()
-                if(delta == "exit" ):
+                if(delta == "q" ):
                     continue
                 else:
                     self.numOfPlayers = int(delta)
@@ -186,7 +187,7 @@ class GameBoard:
                 obj = []
                 obj.append("SETTINGS")
                 obj.append("[1] - PLAYER STARTING AMOUNT - CURRENTLY AT " + str(self.startingAmount))
-                obj.append("ENTER - 'exit' to return to settings screen")
+                obj.append("ENTER - 'q' to return to settings screen")
                 obj.append("PLEASE ENTER NEW STARTING AMOUNT")
                 self.menu.displayTerminal(obj)
                 delta = input()
@@ -200,10 +201,10 @@ class GameBoard:
                 obj.append("SETTINGS")
                 obj.append("[1] - AUTOPLAY - CURRENTLY SET AT " + str(self.autoPlay))
                 obj.append(" * * * 1 = MANUAL || 2 = ALL AUTO || 3 = CUSTOM {CHANGE AND UPDATE INDIVIDUALLY")
-                obj.append("ENTER - 'exit' to return to settings screen")
+                obj.append("ENTER - 'q' to return to settings screen")
                 self.menu.displayTerminal(obj)
                 delta = input()
-                if(delta == "exit" ):
+                if(delta == "q" ):
                     continue
                 elif(delta == "3"):
                     self.autoPlay = int(delta)
@@ -217,32 +218,31 @@ class GameBoard:
                 obj.append("SETTINGS")
                 obj.append("[1] - TOGGLE DOUBLEDOWN RULE - CURRENTLY AT " + str(self.startingAmount))
                 obj.append(" 1 - allows any double on any hand || 2 - allows only on 10 or 11")
-                obj.append("ENTER - 'exit' to return to settings screen")
+                obj.append("ENTER - 'q' to return to settings screen")
                 self.menu.displayTerminal(obj)
                 delta = input()
-                if(delta == "exit" ):
+                if(delta == "q" ):
                     continue
                 else:
-                    self.doubleDown = delta
+                    self.doubleDownRule = delta
                     self.updateSettings()
 
         #menu.printConsole()
     def changePlayerControllers(self):
         choice = ""
-        while (choice !="7"):
+        while (choice !="q"):
             obj = []
             obj.append("CHANGE PLAYER CONTROLS")
             obj.append("PLEASE TOGGLE PLAYER CONTROLS [ 1 - manual || 2 - AUTO]")
-            obj.append(" 1 - allows any double on any hand || 2 - allows only on 10 or 11")
 
             i = 1
             for players in self.playerArray:
                 obj.append("["+str(i)+"] Player " + str(i) + " - " + str(players.controller))
                 i += 1        
-            obj.append("[7] EXIT - to return to settings screen")
+            obj.append("[q] EXIT - to return to settings screen")
             self.menu.displayTerminal(obj)
             choice=input()
-            if(int(choice) != 7):
+            if(choice != "q"):
                 try:
                     if(self.playerArray[int(choice) - 1].controller == 1):
                         self.playerArray[int(choice) - 1].controller = 2
